@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+  <head>
+    <title>alex's chat</title>
+    <link rel='stylesheet' type='text/css' href='chat-style.css'>
+  </head>
+  <body>
+    <form id="username" action="">
+your screen name:      <input id="un" autocomplete="off" /><button>Submit</button>
+    </form>
+
+    <ul id="messages"></ul>
+    <form id="send" action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+      var socket = io();
+      var screenName = '';
+      $('#send').submit(function() {
+        var currentMsg = $('#m').val();
+        if (currentMsg !== '') {
+          if (screenName === '') {
+              socket.emit('chat message', 'person ' + socket.id + ': ' + currentMsg);
+          } else {
+              socket.emit('chat message', screenName + ': ' + currentMsg);
+          }
+        }
+        $('#m').val('');
+        return false;
+      });
+      $('#username').submit(function() {
+          var prevName = screenName;
+          if ($('#un').val() !== '') {
+            screenName = $('#un').val();
+          }
+          var userArr = [socket.id, screenName];
+          if (screenName !== '' && prevName !== screenName)  {
+            socket.emit('username', userArr);
+          }
+          $('#un').val('');
+          return false;
+      })
+      socket.on('connect', function(){
+        console.log('Socket ID is: ' + socket.id);
+        socket.emit('new user', socket.id);
+      });
+      socket.on('chat message', function(msg){
+        $('#messages').append($('<li>').text(msg));
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+      socket.on('recent', function(data){
+        for (var i in data.messages) {
+          $('#messages').append($('<li>').text(data.messages[i]));
+        }
+      });
+    </script>
+  </body>
+</html>
